@@ -13,7 +13,7 @@ MONITOR_WIDTH = 480     # change to your monitor width
 MONITOR_HEIGHT = 800    # change to your monitor height
 DISPLAY_TIME = 10       # seconds per image
 BUFFER_SIZE = 5         # number of images to preload
-IMAGE_ROTATION = 0   # allowed values: 0, 90, 180, 270
+IMAGE_ROTATION = 0      # allowed values: 0, 90, 180, 270
 
 SEARCH_TERM = "flower"
 
@@ -40,7 +40,7 @@ def fetch_image_urls(
     image_urls = []
 
     for img in soup.find_all("img"):
-        src = img.get("src")
+        src = img.get("data-src") or img.get("src")
         if src and src.startswith("http"): # type: ignore
             image_urls.append(src)
 
