@@ -23,31 +23,45 @@ def fetch_image_urls(
         search_term: str,
         max_results: int = 20) -> list:
     """
-    Scrape Google Images search results and return image URLs.
+    Get a list of high-resolution images from Unsplash for the search term.
+    Returns a list of URLs pointing to full-size images.
     """
-    # Parse the query properly.
-    query = quote(search_term)
+    # Unsplash Source provides a direct random image URL per request
+    urls = []
+    for _ in range(max_results):
+        # e.g., 800x800, flower keyword
+        urls.append(f"https://source.unsplash.com/{MONITOR_WIDTH}x{MONITOR_HEIGHT}/?{search_term}")
+    return urls
 
-    # Build the URL.
-    url = f"https://www.google.com/search?q={query}&tbm=isch"
+# def fetch_image_urls(
+#         search_term: str,
+#         max_results: int = 20) -> list:
+#     """
+#     Scrape Google Images search results and return image URLs.
+#     """
+#     # Parse the query properly.
+#     query = quote(search_term)
 
-    # Create the response.
-    headers = {"User-Agent": "Mozilla/5.0"}
-    response = requests.get(url, headers=headers)
-    soup = BeautifulSoup(response.text, "html.parser")
+#     # Build the URL.
+#     url = f"https://www.google.com/search?q={query}&tbm=isch"
 
-    # Collect image URL's
-    image_urls = []
+#     # Create the response.
+#     headers = {"User-Agent": "Mozilla/5.0"}
+#     response = requests.get(url, headers=headers)
+#     soup = BeautifulSoup(response.text, "html.parser")
 
-    for img in soup.find_all("img"):
-        src = img.get("data-src") or img.get("src")
-        if src and src.startswith("http"): # type: ignore
-            image_urls.append(src)
+#     # Collect image URL's
+#     image_urls = []
 
-        if len(image_urls) >= max_results:
-            break
+#     for img in soup.find_all("img"):
+#         src = img.get("data-src") or img.get("src")
+#         if src and src.startswith("http"): # type: ignore
+#             image_urls.append(src)
 
-    return image_urls
+#         if len(image_urls) >= max_results:
+#             break
+
+#     return image_urls
 
 
 def download_image(
