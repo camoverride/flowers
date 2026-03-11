@@ -15,6 +15,7 @@ MONITOR_WIDTH = 800     # change to your monitor width
 MONITOR_HEIGHT = 480    # change to your monitor height
 DISPLAY_TIME = 10       # seconds per image
 BUFFER_SIZE = 5         # number of images to preload
+IMAGE_ROTATION = 90   # allowed values: 0, 90, 180, 270
 
 SEARCH_TERM = "flower"
 
@@ -98,6 +99,22 @@ def resize_to_monitor(image, width, height):
     """
     return cv2.resize(image, (width, height), interpolation=cv2.INTER_AREA)
 
+def rotate_image(image, rotation):
+    """
+    Rotate image by 0, 90, 180, or 270 degrees.
+    """
+
+    if rotation == 90:
+        return cv2.rotate(image, cv2.ROTATE_90_CLOCKWISE)
+
+    if rotation == 180:
+        return cv2.rotate(image, cv2.ROTATE_180)
+
+    if rotation == 270:
+        return cv2.rotate(image, cv2.ROTATE_90_COUNTERCLOCKWISE)
+
+    return image
+
 
 # -----------------------------
 # Prepare image (download + crop + resize)
@@ -110,6 +127,9 @@ def prepare_image(url):
 
     if image is None:
         return None
+
+    # Rotate first so cropping uses the correct orientation
+    image = rotate_image(image, IMAGE_ROTATION)
 
     image = crop_to_monitor_aspect(image, MONITOR_WIDTH, MONITOR_HEIGHT)
     image = resize_to_monitor(image, MONITOR_WIDTH, MONITOR_HEIGHT)
