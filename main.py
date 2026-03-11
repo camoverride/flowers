@@ -11,11 +11,11 @@ from urllib.parse import quote
 # USER SETTINGS
 # -----------------------------
 
-MONITOR_WIDTH = 800     # change to your monitor width
-MONITOR_HEIGHT = 480    # change to your monitor height
+MONITOR_WIDTH = 480     # change to your monitor width
+MONITOR_HEIGHT = 800    # change to your monitor height
 DISPLAY_TIME = 10       # seconds per image
 BUFFER_SIZE = 5         # number of images to preload
-IMAGE_ROTATION = 90   # allowed values: 0, 90, 180, 270
+IMAGE_ROTATION = 0   # allowed values: 0, 90, 180, 270
 
 SEARCH_TERM = "flower"
 
