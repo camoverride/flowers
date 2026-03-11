@@ -7,9 +7,7 @@ from bs4 import BeautifulSoup
 from collections import deque
 from urllib.parse import quote
 
-# -----------------------------
-# USER SETTINGS
-# -----------------------------
+
 
 MONITOR_WIDTH = 480     # change to your monitor width
 MONITOR_HEIGHT = 800    # change to your monitor height
@@ -20,26 +18,30 @@ IMAGE_ROTATION = 0   # allowed values: 0, 90, 180, 270
 SEARCH_TERM = "flower"
 
 
-# -----------------------------
-# Get image URLs from Google
-# -----------------------------
-def fetch_flower_image_urls(search_term, max_results=20):
+
+def fetch_image_urls(
+        search_term: str,
+        max_results: int = 20) -> list:
     """
     Scrape Google Images search results and return image URLs.
     """
+    # Parse the query properly.
     query = quote(search_term)
+
+    # Build the URL.
     url = f"https://www.google.com/search?q={query}&tbm=isch"
 
+    # Create the response.
     headers = {"User-Agent": "Mozilla/5.0"}
-
     response = requests.get(url, headers=headers)
     soup = BeautifulSoup(response.text, "html.parser")
 
+    # Collect image URL's
     image_urls = []
 
     for img in soup.find_all("img"):
         src = img.get("src")
-        if src and src.startswith("http"):
+        if src and src.startswith("http"): # type: ignore
             image_urls.append(src)
 
         if len(image_urls) >= max_results:
@@ -48,78 +50,81 @@ def fetch_flower_image_urls(search_term, max_results=20):
     return image_urls
 
 
-# -----------------------------
-# Download image from URL
-# -----------------------------
-def download_image(url):
+def download_image(
+        url: str) -> np.ndarray | None:
     """
     Download an image and convert it to OpenCV format.
     """
     try:
         response = requests.get(url, timeout=5)
-        image_array = np.asarray(bytearray(response.content), dtype=np.uint8)
+        image_array = np.asarray(
+            bytearray(response.content),
+            dtype=np.uint8)
         image = cv2.imdecode(image_array, cv2.IMREAD_COLOR)
+
         return image
+
     except:
         return None
 
 
-# -----------------------------
-# Crop image to match monitor aspect ratio
-# -----------------------------
-def crop_to_monitor_aspect(image, target_width, target_height):
+def crop_to_monitor_aspect(
+        image: np.ndarray,
+        target_width: int,
+        target_height: int) -> np.ndarray:
     """
     Crop the center of the image to match the monitor aspect ratio.
     """
-    h, w = image.shape[:2]
-
+    # Get the monitor aspect ratio.
     target_ratio = target_width / target_height
+
+    # Get the image aspect ratio.
+    h, w = image.shape[:2]
     image_ratio = w / h
 
+    # If the image is too wide, crop sides.
     if image_ratio > target_ratio:
-        # Image too wide → crop sides
         new_width = int(h * target_ratio)
         start_x = (w - new_width) // 2
         cropped = image[:, start_x:start_x + new_width]
-    else:
-        # Image too tall → crop top/bottom
+
+        return cropped
+
+    # If the image is too tall, crop top/bottom.
+    elif image_ratio < target_ratio:
         new_height = int(w / target_ratio)
         start_y = (h - new_height) // 2
         cropped = image[start_y:start_y + new_height, :]
 
-    return cropped
+        return cropped
+
+    # If the image happens to be exactly the right size, return it.
+    # image_ratio == target_ratio
+    else:
+        return image
 
 
-# -----------------------------
-# Resize image to monitor size
-# -----------------------------
-def resize_to_monitor(image, width, height):
-    """
-    Resize image exactly to the monitor resolution.
-    """
-    return cv2.resize(image, (width, height), interpolation=cv2.INTER_AREA)
+# def rotate_image(
+#         image: np.ndarray,
+#         rotation: int) -> np.ndarray:
+#     """
+#     Rotate image by 0, 90, 180, or 270 degrees.
+#     """
 
-def rotate_image(image, rotation):
-    """
-    Rotate image by 0, 90, 180, or 270 degrees.
-    """
+#     if rotation == 90:
+#         return cv2.rotate(image, cv2.ROTATE_90_CLOCKWISE)
 
-    if rotation == 90:
-        return cv2.rotate(image, cv2.ROTATE_90_CLOCKWISE)
+#     if rotation == 180:
+#         return cv2.rotate(image, cv2.ROTATE_180)
 
-    if rotation == 180:
-        return cv2.rotate(image, cv2.ROTATE_180)
+#     if rotation == 270:
+#         return cv2.rotate(image, cv2.ROTATE_90_COUNTERCLOCKWISE)
 
-    if rotation == 270:
-        return cv2.rotate(image, cv2.ROTATE_90_COUNTERCLOCKWISE)
-
-    return image
+#     return image
 
 
-# -----------------------------
-# Prepare image (download + crop + resize)
-# -----------------------------
-def prepare_image(url):
+def prepare_image(
+        url: str) -> np.ndarray | None:
     """
     Full pipeline for preparing an image for display.
     """
@@ -128,19 +133,22 @@ def prepare_image(url):
     if image is None:
         return None
 
-    # Rotate first so cropping uses the correct orientation
-    # image = rotate_image(image, IMAGE_ROTATION)
+    else:
+        image = crop_to_monitor_aspect(
+            image,
+            MONITOR_WIDTH,
+            MONITOR_HEIGHT)
+        image = cv2.resize(
+            image,
+            (MONITOR_WIDTH, MONITOR_HEIGHT),
+            interpolation=cv2.INTER_AREA)
 
-    image = crop_to_monitor_aspect(image, MONITOR_WIDTH, MONITOR_HEIGHT)
-    image = resize_to_monitor(image, MONITOR_WIDTH, MONITOR_HEIGHT)
-
-    return image
+        return image
 
 
-# -----------------------------
-# Fill image buffer in background
-# -----------------------------
-def buffer_loader(image_urls, buffer):
+def buffer_loader(
+        image_urls: list,
+        buffer: deque) -> None:
     """
     Continuously load images into the buffer so they are ready for display.
     """
@@ -161,22 +169,23 @@ def buffer_loader(image_urls, buffer):
             time.sleep(0.5)
 
 
-# -----------------------------
-# Display images using OpenCV
-# -----------------------------
 def display_images(buffer):
     """
     Display images from buffer for DISPLAY_TIME seconds each.
     """
-    cv2.namedWindow("Flowers", cv2.WINDOW_NORMAL)
-    cv2.setWindowProperty("Flowers", cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
+    cv2.namedWindow(
+        "Display",
+        cv2.WINDOW_NORMAL)
+    cv2.setWindowProperty(
+        "Display",
+        cv2.WND_PROP_FULLSCREEN,
+        cv2.WINDOW_FULLSCREEN)
 
     while True:
-
         if len(buffer) > 0:
             image = buffer.popleft()
 
-            cv2.imshow("Flowers", image)
+            cv2.imshow("Display", image)
             cv2.waitKey(1)
 
             start = time.time()
@@ -189,19 +198,17 @@ def display_images(buffer):
             time.sleep(0.1)
 
 
-# -----------------------------
-# Main program
-# -----------------------------
-def main():
 
+if __name__ == "__main__":
     print("Fetching flower image URLs...")
-    image_urls = fetch_flower_image_urls(SEARCH_TERM)
+
+    image_urls = fetch_image_urls(SEARCH_TERM)
 
     print("Found", len(image_urls), "images")
 
     image_buffer = deque()
 
-    # Start background loader thread
+    # Start background loader thread.
     loader_thread = threading.Thread(
         target=buffer_loader,
         args=(image_urls, image_buffer),
@@ -209,9 +216,5 @@ def main():
     )
     loader_thread.start()
 
-    # Display images
+    # Display images.
     display_images(image_buffer)
-
-
-if __name__ == "__main__":
-    main()
