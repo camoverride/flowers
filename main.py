@@ -121,20 +121,20 @@ def rotate_image(image, rotation):
 # -----------------------------
 def prepare_image(url):
     """
-    Full pipeline for preparing an image for display.
-    Only use images that are at least as large as the monitor.
+    Download an image, only use it if it's at least as large as the monitor,
+    then crop and resize to exactly MONITOR_WIDTH x MONITOR_HEIGHT.
     """
     image = download_image(url)
-
     if image is None:
         return None
 
-    # Reject images smaller than monitor
     h, w = image.shape[:2]
+
+    # Only accept images at least as large as the monitor
     if w < MONITOR_WIDTH or h < MONITOR_HEIGHT:
         return None
 
-    # Crop and resize as usual
+    # Crop to monitor aspect ratio and resize
     image = crop_to_monitor_aspect(image, MONITOR_WIDTH, MONITOR_HEIGHT)
     image = resize_to_monitor(image, MONITOR_WIDTH, MONITOR_HEIGHT)
 
