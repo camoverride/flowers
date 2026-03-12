@@ -1,0 +1,15 @@
+[Unit]
+Description=display flowers
+After=default.target
+
+[Service]
+Type=simple
+Restart=always
+WorkingDirectory=/home/%u/flowers
+ExecStart=/home/%u/flowers/.venv/bin/python /home/%u/flowers/run_display.py
+StandardOutput=journal
+StandardError=journal
+Environment="PATH=/home/%u/flowers/.venv/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+
+[Install]
+WantedBy=default.target
